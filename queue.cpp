@@ -221,6 +221,14 @@ void DoubleQueue::printEvent() {
     cout << "]" << "\n";
 }
 
+// returns the number of servers that are currently busy
+unsigned DoubleQueue::busyNumber() {
+    vector<double> next_event = getVector();
+    unsigned counter = count(next_event.begin(), (next_event.end()-2),
+        getHigh());
+    return (getServer() - counter);
+}
+
 
 
 

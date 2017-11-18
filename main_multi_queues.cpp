@@ -17,21 +17,21 @@ int main() {
     // mean arrival rate and mean service rate for queues with single servers
     double lambda_1 = 0.02;
     double lambda_2 = 0.02;
-    double mu_1 = 0.003;
+    double mu_1 = 0.0345;
     double mu_2 = 0.003;
 
     // mean service rates for dual servers
-    double mu_11 = 0.003;
-    double mu_22 = 0.003;
+    double mu_11 = 0.01;
+    double mu_22 = 0.01;
 
     // proportion of customers sent in the queue with dual servers
-    double alpha_1 = 0.000000000000001;
-    double alpha_2 = 0.999999999999999;
+    double alpha_1 = 0.5;
+    double alpha_2 = 0.5;
 
     // number of servers
-    unsigned s_1 = 10;
-    unsigned s_2 = 10;
-    unsigned s_12 = 10;
+    unsigned s_1 = 5;
+    unsigned s_2 = 5;
+    unsigned s_12 = 2;
 
     // true if you want to have the program display each event
     bool display = false;
@@ -111,6 +111,8 @@ int main() {
 
 
     for (int j = 0; j<iteration_number; j++) {
+
+        cout << "Ppl in queue " << queue_12.getQueue() << endl;
 
         if (display == true) {cout << endl;}
 
@@ -331,6 +333,16 @@ int main() {
 
         }
 
+
+
+        //queue_12.incrementQueue();
+        //queue_12.setOrder(false);
+        //cout << "Number of customers in the queue " << queue_12.getQueue() << endl;
+        //cout << "Number of busy servers " << queue_12.busyNumber() << endl;
+
+
+
+
         // adds the time spent by customers standing in the queue to the tracker
         total_time_waited_1 += queue_1.getQueue()*next_event_time;
         total_time_waited_2 += queue_2.getQueue()*next_event_time;
@@ -468,19 +480,17 @@ int main() {
         }
 
 
-
         // case where the next event happens in relation with queue_12
         if (last_event == 3) {
 
             unsigned next_event_index =
                 queue_12.findMinElement(next_event_time);
 
-
-            // case where the next event is a customer of service class 1
-            // entering the queue
             if ((next_event_index == queue_12.getServer()) ||
                 (next_event_index == (queue_12.getServer() + 1))) {
 
+                // case where the next event is a customer of service class 1
+                // entering the queue
                 if (next_event_index == queue_12.getServer()) {
 
                     last_event = 11;
@@ -728,7 +738,6 @@ int main() {
 
     cout << "Mean square error for queue_1 is " << mean_square_error_1 << endl;
     cout << "Mean square error for queue_2 is " << mean_square_error_2 << endl;
-
 
     // computes the observed mean waiting time for queue_1
     double mean_waiting_time_1 = total_time_waited_1/

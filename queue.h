@@ -101,6 +101,8 @@ public:
     void updateEvent(double delay);
     // prints the components of next_event
     void printEvent();
+    // returns the number of servers that are currently busy
+    unsigned busyNumber() ;
 
 };
 
