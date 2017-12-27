@@ -12,15 +12,18 @@ using namespace std;
 int main() {
 
     // total number of iterations
-    unsigned iteration_number = 2500000;
+    unsigned iteration_number = 10e6;
+    unsigned begin_steady_state = (iteration_number/20.0);
 
     // mean arrival rate and mean service rate for queues with single servers
-    double lambda_1 = 0.02;
-    double mu_1 = 0.003;
+    double lambda_1 = 0.01;
+    double mu_1 = 0.02;
 
     // number of servers
-    unsigned s_1 = 10;
+    unsigned s_1 = 1;
 
+    // number of steady-state probabilities we consider
+    unsigned vector_size = 50*s_1;
 
     // initializes the three queues
     Queue queue_1 (lambda_1, mu_1, s_1);
@@ -41,10 +44,10 @@ int main() {
 
     // initialization of a vector that counts the amount of time spent in each
     // state
-    vector<double> steady_state_probabilities(10*queue_1.getServer(), 0);
+    vector<double> steady_state_probabilities(vector_size, 0);
 
     // initialization of a timer
-    //auto t_begin = chrono::high_resolution_clock::now();
+    auto t_begin = chrono::high_resolution_clock::now();
 
 
 // -------------------------------------------------------------------------- //
@@ -102,13 +105,24 @@ int main() {
         double next_event_time = queue_1.findMinElement();
         unsigned next_event_index = queue_1.findMinElement(next_event_time);
 
-        // updates time trackers
-        if ((queue_1.getQueue() + queue_1.getServer()) < 10*queue_1.getServer())
-        {
+        // updates time trackers when QS is in steady_state
+        if (j > begin_steady_state) {
+            if ((queue_1.getQueue() + queue_1.getServer()) <
+                vector_size) {
 
-            steady_state_probabilities[queue_1.busyNumber() +
-                queue_1.getQueue()] += next_event_time;
-            total_time += next_event_time;
+                steady_state_probabilities[queue_1.busyNumber() +
+                    queue_1.getQueue()] += next_event_time;
+                    total_time += next_event_time;
+
+            }
+
+            // checks if steady_state_probabilities is large enough for all the
+            // states visited
+            else {
+
+                cout << "The number of customers in the queue is too large"
+                << endl;
+            }
 
         }
 
@@ -160,6 +174,12 @@ int main() {
     }
 
 
+    auto t_end = chrono::high_resolution_clock::now();
+    double timer = chrono::duration_cast<chrono::seconds>(t_end - t_begin).count();
+
+    cout << "Loop time is " << timer << " seconds" << endl;
+
+
 // -------------------------------------------------------------------------- //
 // --------------------------- STEADY STATE STUDY --------------------------- //
 // -------------------------------------------------------------------------- //
@@ -203,7 +223,7 @@ int main() {
     }
 
     // second loop to compute the steady state probabilities
-    for (int i = (queue_1.getServer()+1); i < 10*queue_1.getServer(); i++) {
+    for (int i = (queue_1.getServer()+1); i < vector_size; i++) {
 
         observed_proba = steady_state_probabilities[i]/total_time;
 

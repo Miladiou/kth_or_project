@@ -4,6 +4,7 @@
 #include <vector>
 #include <algorithm>
 #include <fstream>
+#include <string>
 #include "queue.h"
 
 using namespace std;
@@ -12,26 +13,32 @@ using namespace std;
 int main() {
 
     // total number of iterations
-    unsigned iteration_number = 5000000;
+    unsigned iteration_number = 200e6;
+    unsigned begin_steady_state = iteration_number/20.0;
 
     // mean arrival rate and mean service rate for queues with single servers
-    double lambda_1 = 0.02;
+    double lambda_1 = 0.01;
     double lambda_2 = 0.02;
-    double mu_1 = 0.0345;
-    double mu_2 = 0.003;
+    double mu_1 = 0.03;
+    double mu_2 = 0.03;
 
     // mean service rates for dual servers
-    double mu_11 = 0.01;
-    double mu_22 = 0.01;
+    double mu_11 = 0.04;
+    double mu_22 = 0.03;
 
     // proportion of customers sent in the queue with dual servers
-    double alpha_1 = 0.5;
+    double alpha_1 = 0.75;
     double alpha_2 = 0.5;
 
     // number of servers
-    unsigned s_1 = 5;
-    unsigned s_2 = 5;
-    unsigned s_12 = 2;
+    unsigned s_1 = 10;
+    unsigned s_2 = 10;
+    unsigned s_12 = 1;
+
+    // number of steady-state probabilities we consider
+    unsigned vector_size_1 = 50*s_1;
+    unsigned vector_size_2 = 50*s_2;
+    unsigned vector_size_12 = 50*s_12;
 
     // true if you want to have the program display each event
     bool display = false;
@@ -78,9 +85,13 @@ int main() {
 
     // initialization of a vector that counts the amount of time spent in each
     // state
-    vector<double> steady_state_probabilities_1(10*queue_1.getServer(), 0);
-    vector<double> steady_state_probabilities_2(10*queue_2.getServer(), 0);
-    vector<double> steady_state_probabilities_12(10*queue_12.getServer(), 0);
+    vector<double> steady_state_probabilities_1(vector_size_1, 0);
+    vector<double> steady_state_probabilities_2(vector_size_2, 0);
+    vector<double> steady_state_probabilities_12(vector_size_12, 0);
+
+    // includes the service class of the customer being treated at queue_12 in
+    // the states
+    vector<double> steady_state_probabilities_12_single(2*vector_size_12-1,0);
 
     // stores the time before next event for each of the queues
     vector<double> best_event_time(3);
@@ -111,8 +122,6 @@ int main() {
 
 
     for (int j = 0; j<iteration_number; j++) {
-
-        cout << "Ppl in queue " << queue_12.getQueue() << endl;
 
         if (display == true) {cout << endl;}
 
@@ -307,29 +316,84 @@ int main() {
 
 
         // updates time trackers
-        if ((queue_1.getQueue() + queue_1.getServer()) < 10*queue_1.getServer())
-        {
+        if (j > begin_steady_state) {
+            if ((queue_1.getQueue() + queue_1.getServer()) < vector_size_1) {
 
             steady_state_probabilities_1[queue_1.busyNumber() +
                 queue_1.getQueue()] += next_event_time;
             total_time_1 += next_event_time;
 
-        }
+            }
 
-        if ((queue_2.getQueue() + queue_2.getServer()) < 10*queue_2.getServer())
-        {
-            steady_state_probabilities_2[queue_2.busyNumber() +
-                queue_2.getQueue()] += next_event_time;
-            total_time_2 += next_event_time;
+            // checks if steady_state_probabilities is large enough for all the
+            // states visited
+            else {
 
-        }
+                cout << "The number of customers in the queue is too large"
+                << endl;
+            }
 
-        if ((queue_12.getQueue() + queue_12.getServer()) <
-            10*queue_12.getServer()) {
+            if ((queue_2.getQueue() + queue_2.getServer()) < vector_size_2) {
 
-            steady_state_probabilities_12[queue_12.busyNumber() +
-                queue_12.getQueue()] += next_event_time;
-            total_time_12 += next_event_time;
+                steady_state_probabilities_2[queue_2.busyNumber() +
+                    queue_2.getQueue()] += next_event_time;
+                total_time_2 += next_event_time;
+
+            }
+
+            // checks if steady_state_probabilities is large enough for all the
+            // states visited
+            else {
+
+                cout << "The number of customers in the queue is too large"
+                << endl;
+            }
+
+
+            if ((queue_12.getQueue() + queue_12.getServer()) < vector_size_12) {
+
+                steady_state_probabilities_12[queue_12.busyNumber() +
+                    queue_12.getQueue()] += next_event_time;
+                total_time_12 += next_event_time;
+
+                if (queue_12.getServer() == 1) {
+
+                    unsigned type = queue_12.getType();
+
+                    if (type == 0) {
+
+                        steady_state_probabilities_12_single[0] +=
+                            next_event_time;
+
+                    }
+
+                    if (type == 1) {
+
+                        steady_state_probabilities_12_single[
+                            2*(queue_12.busyNumber()+queue_12.getQueue()) - 1]
+                            += next_event_time;
+
+                    }
+
+                    if (type == 2) {
+
+                        steady_state_probabilities_12_single[
+                            2*(queue_12.busyNumber()+queue_12.getQueue())]
+                            += next_event_time;
+
+                    }
+
+                }
+
+            }
+
+            // checks if steady_state_probabilities is large enough for all the
+            // states visited
+            else {
+
+                cout << "The number of customers in the queue is too large"
+                << endl;
+            }
 
         }
 
@@ -522,6 +586,18 @@ int main() {
                     unsigned free_server = queue_12.findFreeServer();
                     queue_12.setIndex(free_server);
 
+                    if (queue_12.getServer() == 1) {
+
+                        if (next_event_index == queue_12.getServer()) {
+
+                            queue_12.setType(1);
+
+                        }
+
+                        else {queue_12.setType(2);}
+
+                    }
+
                     if (display == true) {
                         cout << "This customer now joins server number " <<
                             free_server << "." << endl;
@@ -558,14 +634,31 @@ int main() {
                             << endl;
                     }
 
-                    if (queue_12.getOrder() == false) {last_event = 11;}
-                    else {last_event = 22;}
+                    if (queue_12.getOrder() == false) {
+
+                        last_event = 11;
+                        if (queue_12.getServer() == 1) {queue_12.setType(1);}
+
+                    }
+
+                    else {
+
+                        last_event = 22;
+                        if (queue_12.getServer() == 1) {queue_12.setType(2);}
+
+                    }
+
                     queue_12.decrementQueue();
                     queue_12.setIndex(next_event_index);
 
                 }
 
-                else {queue_12.setIndex(queue_12.getServer());}
+                else {
+
+                    queue_12.setIndex(queue_12.getServer());
+                    if (queue_12.getServer() == 1) {queue_12.setType(0);}
+
+                }
 
             }
 
@@ -601,9 +694,9 @@ int main() {
 
 
     auto t_end = chrono::high_resolution_clock::now();
-    double timer = chrono::duration_cast<chrono::milliseconds>(t_end - t_begin).count();
+    double timer = chrono::duration_cast<chrono::seconds>(t_end - t_begin).count();
 
-    cout << "Loop time is " << timer << endl;
+    cout << "Loop time is " << timer << " seconds" << endl;
 
 
 // -------------------------------------------------------------------------- //
@@ -615,13 +708,34 @@ int main() {
     ofstream my_file_1;
     ofstream my_file_2;
     ofstream my_file_12;
+    ofstream my_file_12_s1;
     my_file_1.open("steady_state_multi_1.txt");
     my_file_2.open("steady_state_multi_2.txt");
     my_file_12.open("steady_state_multi_12.txt");
+    my_file_12_s1.open("steady_state_multi_12_s1.txt");
+
+    vector<double> python_results(2*vector_size_12-1,0);
+
+    if (queue_12.getServer() == 1) {
+
+        ifstream python_file;
+        python_file.open("python_results.txt");
+
+        string line;
+        unsigned index = 0;
+
+        while (getline(python_file,line)) {
+            double value = stod (line);
+            python_results[index] = value;
+            index = index + 1;
+        }
+
+    }
 
     // computes the mean square error of the steady-state probabilities vector
     double mean_square_error_1 = 0;
     double mean_square_error_2 = 0;
+    double mean_square_error_12_s1 = 0;
 
 
     // computes the P_0 probability of the steady state for queue_1
@@ -672,7 +786,7 @@ int main() {
     }
 
     // second loop to compute the steady state probabilities for queue_1
-    for (int i = (queue_1.getServer()+1); i < 10*queue_1.getServer(); i++) {
+    for (int i = (queue_1.getServer()+1); i < vector_size_1; i++) {
 
         observed_proba = steady_state_probabilities_1[i]/total_time_1;
 
@@ -709,7 +823,7 @@ int main() {
     }
 
     // second loop to compute the steady state probabilities for queue_2
-    for (int i = (queue_2.getServer()+1); i < 10*queue_2.getServer(); i++) {
+    for (int i = (queue_2.getServer()+1); i < vector_size_2; i++) {
 
         observed_proba = steady_state_probabilities_2[i]/total_time_2;
 
@@ -728,7 +842,7 @@ int main() {
     }
 
     // computes the steady state probabilities for queue_12
-    for (int i = 0; i < 10*queue_12.getServer(); i++) {
+    for (int i = 0; i < vector_size_12; i++) {
 
         observed_proba = steady_state_probabilities_12[i]/total_time_12;
 
@@ -736,8 +850,24 @@ int main() {
 
     }
 
+    // computes the steady state probabilities for queue_12 if s_12 == 1
+    if (queue_12.getServer() == 1) {
+        for (int i = 0; i < (2*vector_size_12-1); i++) {
+
+        observed_proba = steady_state_probabilities_12_single[i]/total_time_12;
+        double theoretical_proba = python_results[i];
+
+        my_file_12_s1 << "Observed P_" << i << " is " << observed_proba << endl;
+
+        mean_square_error_12_s1 += pow(observed_proba - theoretical_proba,2);
+
+        }
+    }
+
     cout << "Mean square error for queue_1 is " << mean_square_error_1 << endl;
     cout << "Mean square error for queue_2 is " << mean_square_error_2 << endl;
+
+    cout << "Mean square error for queue_12_s1 is " << mean_square_error_12_s1 << endl;
 
     // computes the observed mean waiting time for queue_1
     double mean_waiting_time_1 = total_time_waited_1/
@@ -772,6 +902,7 @@ int main() {
     my_file_1.close();
     my_file_2.close();
     my_file_12.close();
+    my_file_12_s1.close();
 
     return 0;
 

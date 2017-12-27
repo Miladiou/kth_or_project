@@ -27,8 +27,7 @@ Queue::Queue (double a, double b, unsigned c) {
 DoubleQueue::DoubleQueue (double a, double b, double d, unsigned c)
     : Queue(a,b,c) {
     mu_2 = d;
-    // the size of current_order can be increased to better model an infinite
-    // queue
+    type_served = 0;
     vector<bool> current_order;
     Expand();
 }
@@ -169,13 +168,6 @@ void Queue::Expand() {
 
 // getters for the derived class "DoubleQueue"
 
-
-// returns 0 or 1 depending on the service class of the next customer in the
-// queue
-bool DoubleQueue::getNext() {
-    return current_order[0];
-}
-
 // returns 0 or 1 depending on the service class of the customer that has
 // been in the queue for the longest period of time
 bool DoubleQueue::getOrder() {
@@ -184,12 +176,23 @@ bool DoubleQueue::getOrder() {
     return result;
 }
 
+// returns 0,1 or 2 depending on the service class of the customer being
+// served if s_12 == 1
+unsigned DoubleQueue::getType() {
+    return type_served;
+}
+
+
 // stores the service class of the entering customer
 void DoubleQueue::setOrder(bool service) {
     if (service == false) {current_order.insert(current_order.begin(), false);}
     else {current_order.insert(current_order.begin(), true);}
 }
 
+// sets type_served to the service class of the customer being served if s_12==1
+void DoubleQueue::setType(unsigned type) {
+    type_served = type;
+}
 
 
 // returns a boolean value to assess if a new time should be computed for

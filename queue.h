@@ -71,6 +71,7 @@ class DoubleQueue : public Queue {
 private:
 
     double mu_2;
+    unsigned type_served;
     vector<bool> current_order;
 
 public:
@@ -80,18 +81,20 @@ public:
 
     // getters
 
-    // returns 0 or 1 depending on the service class of the next customer in the
-    // queue
-    bool getNext();
     // returns 0 or 1 depending on the service class of the customer that has
     // been in the queue for the longest period of time
     bool getOrder();
+    // returns 0,1 or 2 depending on the service class of the customer being
+    // served if s_12 == 1
+    unsigned getType();
 
     // setters
 
     // stores the service class of the entering customer
     void setOrder(bool service);
-
+    // sets type_served to the service class of the customer being served
+    void setType(unsigned type);
+    
     // overloaded methods
 
     // returns a boolean value to assess if a new time should be computed for
